@@ -1,0 +1,15 @@
+Package: mle
+Title: Convenience functions for maximum likelihood estimation
+Version: 0.0.0.9000
+Authors@R: person("Kevin", "Potter", email = "kevin.w.potter@gmail.com", role = c("aut", "cre"))
+Description: A set of functions that simplify the process of using base R's
+    optimization routines for maximum likelihood estimation.
+Depends:
+    R (>= 2.4)
+Suggests:
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+License: MIT + file LICENSE
+LazyData: true
+RoxygenNote: 5.0.1

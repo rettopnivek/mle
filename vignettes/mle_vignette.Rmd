@@ -1,0 +1,133 @@
+---
+title: "Vignette for mle package"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette for mle package}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+## Sections
+
+1. Introduction
+2. Maximum likelihood estimation (MLE)
+3. Using R's optimization routines
+4. Installation
+
+## Introduction
+
+### Maximum likelihood estimation (MLE)
+
+Forthcoming
+
+### Using R's optimization routines
+
+R has several options for general purpose optimization. Furthermore, there are a wide variety of R packages that have been created that provide very  powerful optimization tools for a variety of problems; the package here uses R's base functions primarily for ease of application. This package focuses on two functions, `optim` and `nlm`.
+
+The `optim` function is based on code originally from Nash (1990), and provides a range of optimization algorithms for attempting to find either global maxima or minima. As an example, suppose we want to use `optim` to obtain maximum likelihood estimates when fitting the normal distribution to a set of data. First, we will simulate some data to fit:
+
+```{r}
+# Define a set of generating parameters
+gp = c( mu = 100, sigma = 15 )
+
+# Generate a set of data
+set.seed = 1
+x = rnorm( 100, gp[1], gp[2] )
+```
+
+To use `optim` to obtain the maximum likelihood estimates, we must provide a set of starting values to initialize the parameter search, and then we must provide a function that takes the data and computes the sum of the log-likelihoods:
+
+```{r}
+# Starting values
+start_val = c( 80, 30 )
+
+# Compute the sum of the log-likelihoods for the normal distribution
+fn = function( prm, x ) {
+  # prm = A vector of parameters; the mean and standard deviation
+  # x = A vector of data
+  
+  sll = sum( dnorm( x, prm[1], prm[2], log = T ) )
+  
+  return( sll )
+}
+```
+
+Finally, we must set `optim` to attempt to maximize the function instead of minimize:
+
+```{r}
+control = list( fnscale = -1 )
+```
+
+We can now make the call to `optim`:
+
+```{r}
+estimates = optim( start_val, fn, x = x, control = control )
+```
+
+Note that a warning is generated - this is because the parameter $\sigma$ for the normal distribution must be positive, but optimization routine can propose negative values for this parameter.
+
+Due to the simplicity of the model, we can compare the estimates returned by `optim` to the maximum likelhood estimates based on analytic method:
+```{r}
+print( "Estimates (optim)" )
+print( round( estimates$par, 2 ) )
+
+print( "True maximum likelihood estimates" )
+print( round( c( mean(x), sd(x) ), 2 ) )
+```
+
+As can be seen, the estimate for the mean from `optim` is equivalent to the true estimate, but the estimate for the standard deviation is slightly off.
+
+## Installation
+
+The package can be installed via "devtools":
+
+```{r,eval=FALSE}
+install.packages("devtools")
+library(devtools)
+install_github("rettopnivek/mle")
+```
+
+Once the package has been installed, we can load it for easy use:
+
+```{r}
+library(mle)
+```
+
+## The likelihood function
+
+The 'mle' package provides a template for creating functions to compute the sum of the log-likelihoods of a given model that are compatible with the package's convenience functions. This template can be used by calling `mle_fn_template()` and copying and modifying the resulting output:
+
+```{r}
+mle_fn_template()
+```
+
+While the function does not have to be named `mle_fn`, it must take four parameters: `prm`, `dat`, `sum`, and `priors`. Furthermore, for compatibility with the S3 class ??? options, the function must return the sum of the log-likelihoods if `sum = T` or a vector of the log-likelihoods for every observation if `sum = F`.
+
+## ???
+
+```{r}
+mle_fn = function( prm, dat, 
+                   sum = T, priors = NULL ) { 
+  # Initial setup 
+  y = dat; n = 1 # Extract data
+  theta = 1/(1 + exp( -prm ) ) # Bound between 0 and 1
+
+  # Calculate the log-likelihoods 
+  ll = dbinom( y, n, theta, log = T )
+  if ( !sum ) return( ll )
+
+  # Sum the log-likelihoods 
+  sll = sum( ll ) 
+
+  # Incorporate priors (Optional) 
+  if ( !is.null(priors) ) { 
+    sll = sll +  
+    dbeta( theta, priors[1], priors[2], log = T )
+  } 
+
+  # Check for NA values 
+  if ( is.na( sll ) ) sll = -Inf 
+
+  return( sll ) 
+}
+```
