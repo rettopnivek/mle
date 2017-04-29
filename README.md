@@ -1,5 +1,4 @@
 # mle
-Convenience functions for maximum likelihood estimation
 
 A R package with a collection of useful functions for carrying out maximum likelihood estimation. The package streamlines calls to R's base optimization routines.
 
